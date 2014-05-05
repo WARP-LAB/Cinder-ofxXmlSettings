@@ -4,6 +4,10 @@
 #include <string>
 #include <iostream>
 
+#ifdef CINDER_HOST
+namespace cinder { 
+#endif
+
 // this increases the accuracy of ofToString() when saving floating point values
 // but in the process of setting it also causes very small values to be ignored.
 const float floatPrecision = 9;
@@ -41,7 +45,11 @@ ofxXmlSettings::ofxXmlSettings():
 }
 
 //----------------------------------------
+#ifdef CINDER_HOST
+ofxXmlSettings::ofxXmlSettings(DataSourceRef xmlFile):
+#else
 ofxXmlSettings::ofxXmlSettings(const string& xmlFile):
+#endif
     storedHandle(NULL)
 {
 	level			= 0;
@@ -72,9 +80,17 @@ void ofxXmlSettings::clear(){
 }
 
 //---------------------------------------------------------
-bool ofxXmlSettings::loadFile(const string& xmlFile){
+#ifdef CINDER_HOST
+bool ofxXmlSettings::loadFile(DataSourceRef xmlFile){
+#else
+bool ofxXmlSettings::loadFile(const string& xmlFile){    
+#endif
 
+#ifdef CINDER_HOST
+    string fullXmlFile = xmlFile->getFilePath().string();
+#else
 	string fullXmlFile = ofToDataPath(xmlFile);
+#endif
 
 	bool loadOkay = doc.LoadFile(fullXmlFile);
 
@@ -90,9 +106,17 @@ bool ofxXmlSettings::loadFile(const string& xmlFile){
 }
 
 //---------------------------------------------------------
-bool ofxXmlSettings::saveFile(const string& xmlFile){
+#ifdef CINDER_HOST
+bool ofxXmlSettings::saveFile(DataSourceRef xmlFile){
+#else
+bool ofxXmlSettings::saveFile(const string& xmlFile){    
+#endif
 
+#ifdef CINDER_HOST
+    string fullXmlFile = xmlFile->getFilePath().string();
+#else
 	string fullXmlFile = ofToDataPath(xmlFile);
+#endif
 	return doc.SaveFile(fullXmlFile);
 }
 
@@ -102,12 +126,20 @@ bool ofxXmlSettings::saveFile(){
 }
 
 //---------------------------------------------------------
+#ifdef CINDER_HOST
+bool ofxXmlSettings::load(DataSourceRef path){
+#else
 bool ofxXmlSettings::load(const string & path){
+#endif
 	return loadFile(path);
 }
 
 //---------------------------------------------------------
+#ifdef CINDER_HOST
+bool ofxXmlSettings::save(DataSourceRef path){
+#else
 bool ofxXmlSettings::save(const string & path){
+#endif
 	return saveFile(path);
 }
 
@@ -156,7 +188,15 @@ void ofxXmlSettings::removeTag(const string& tag, int which){
 int ofxXmlSettings::getValue(const string& tag, int defaultValue, int which){
     TiXmlHandle valHandle(NULL);
 	if (readTag(tag, valHandle, which)){
+#ifdef CINDER_HOST
+        try {
+            return boost::lexical_cast<int>( valHandle.ToText()->Value() );
+        } catch( boost::bad_lexical_cast const& ) {
+            console() << "Error: string for getValue was not valid" << endl;
+        }
+#else
 		return ofToInt(valHandle.ToText()->Value());
+#endif
 	}
 	return defaultValue;
 }
@@ -165,7 +205,15 @@ int ofxXmlSettings::getValue(const string& tag, int defaultValue, int which){
 double ofxXmlSettings::getValue(const string& tag, double defaultValue, int which){
     TiXmlHandle valHandle(NULL);
 	if (readTag(tag, valHandle, which)){
+#ifdef CINDER_HOST
+        try {
+            return boost::lexical_cast<float>( valHandle.ToText()->Value() );
+        } catch( boost::bad_lexical_cast const& ) {
+            console() << "Error: string for getValue was not valid" << endl;
+        }
+#else
 		return ofToFloat(valHandle.ToText()->Value());
+#endif
 	}
 	return defaultValue;
 }
@@ -212,7 +260,11 @@ bool ofxXmlSettings::pushTag(const string&  tag, int which){
 		level++;
 		return true;
 	}else{
+#ifdef CINDER_HOST
+        console() << "XmlSettings: " << "pushTag(): tag \"" << tag << "\" not found" << endl;
+#else
         ofLogError("ofxXmlSettings") << "pushTag(): tag \"" << tag << "\" not found";
+#endif
 	}
 
 	return false;
@@ -375,13 +427,23 @@ int ofxXmlSettings::writeTag(const string&  tag, const string& valueStr, int whi
 
 //---------------------------------------------------------
 int ofxXmlSettings::setValue(const string& tag, int value, int which){
+#ifdef CINDER_HOST
+    int tagID = writeTag(tag, std::to_string(value).c_str(), which) -1;
+#else
 	int tagID = writeTag(tag, ofToString(value).c_str(), which) -1;
+#endif
 	return tagID;
 }
 
 //---------------------------------------------------------
 int ofxXmlSettings::setValue(const string& tag, double value, int which){
+#ifdef CINDER_HOST
+    std::ostringstream tmpValue;
+    tmpValue << std::setprecision(floatPrecision) << value;
+	int tagID = writeTag(tag, tmpValue.str().c_str(), which) -1;
+#else
 	int tagID = writeTag(tag, ofToString(value, floatPrecision).c_str(), which) -1;
+#endif
 	return tagID;
 }
 
@@ -393,13 +455,23 @@ int ofxXmlSettings::setValue(const string& tag, const string& value, int which){
 
 //---------------------------------------------------------
 int ofxXmlSettings::addValue(const string& tag, int value){
+#ifdef CINDER_HOST
+    int tagID = writeTag(tag, std::to_string(value).c_str(), -1) -1;
+#else
 	int tagID = writeTag(tag, ofToString(value).c_str(), -1) -1;
+#endif
 	return tagID;
 }
 
 //---------------------------------------------------------
 int ofxXmlSettings::addValue(const string&  tag, double value){
+#ifdef CINDER_HOST
+    std::ostringstream tmpValue;
+    tmpValue << std::setprecision(floatPrecision) << value;
+	int tagID = writeTag(tag, tmpValue.str().c_str(), -1) -1;
+#else
 	int tagID = writeTag(tag, ofToString(value, floatPrecision).c_str(), -1) -1;
+#endif
 	return tagID;
 }
 
@@ -415,6 +487,7 @@ int ofxXmlSettings::addTag(const string& tag){
 	return tagID;
 }
 
+#ifndef CINDER_HOST
 void ofxXmlSettings::serialize(const ofAbstractParameter & parameter){
 	if(!parameter.isSerializable()) return;
 	string name = parameter.getEscapedName();
@@ -465,6 +538,7 @@ void ofxXmlSettings::deserialize(ofAbstractParameter & parameter){
 	}
 
 }
+#endif
 
 /*******************
 * Attribute addons *
@@ -472,7 +546,11 @@ void ofxXmlSettings::deserialize(ofAbstractParameter & parameter){
 
 //---------------------------------------------------------
 int ofxXmlSettings::addAttribute(const string& tag, const string& attribute, int value, int which){
+#ifdef CINDER_HOST
+    int tagID = writeAttribute(tag, attribute, std::to_string(value).c_str(), which) -1;
+#else
 	int tagID = writeAttribute(tag, attribute, ofToString(value).c_str(), which) -1;
+#endif
 	return tagID;
 }
 
@@ -483,7 +561,13 @@ int ofxXmlSettings::addAttribute(const string& tag, const string& attribute, int
 
 //---------------------------------------------------------
 int ofxXmlSettings::addAttribute(const string& tag, const string& attribute, double value, int which){
+#ifdef CINDER_HOST
+    std::ostringstream tmpValue;
+    tmpValue << std::setprecision(floatPrecision) << value;
+	int tagID = writeAttribute(tag, attribute, tmpValue.str().c_str(), which) -1;
+#else
 	int tagID = writeAttribute(tag, attribute, ofToString(value, floatPrecision).c_str(), which) -1;
+#endif
 	return tagID;
 }
 
@@ -736,3 +820,6 @@ void ofxXmlSettings::copyXmlToString(string & str)
 	str = printer.CStr();
 }
 
+#ifdef CINDER_HOST
+} // namespace cinder
+#endif

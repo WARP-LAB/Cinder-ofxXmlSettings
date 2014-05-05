@@ -1,6 +1,17 @@
 #pragma once
 
+#if defined(CINDER_COCOA) || defined( CINDER_MSW )
+#ifndef CINDER_HOST
+#define CINDER_HOST
+#endif
+#endif
+
+#ifdef CINDER_HOST
+#include "cinder/Cinder.h"
+#include <boost/lexical_cast.hpp>
+#else
 #include "ofMain.h"
+#endif
 #include <string.h>
 #if (_MSC_VER)
 #include "../libs/tinyxml.h"
@@ -44,22 +55,39 @@ using namespace std;
 
 #define MAX_TAG_VALUE_LENGTH_IN_CHARS		1024
 
+#ifdef CINDER_HOST
+using namespace ci;
+using namespace ci::app;
+namespace cinder {
+class ofxXmlSettings{
+#else
 class ofxXmlSettings: public ofBaseFileSerializer{
-
+#endif
 	public:
         ofxXmlSettings();
+#ifdef CINDER_HOST
+        ofxXmlSettings(DataSourceRef xmlFile);
+#else
         ofxXmlSettings(const string& xmlFile);
-
+#endif
         ~ofxXmlSettings();
 
 		void setVerbose(bool _verbose);
-
+#ifdef CINDER_HOST
+        bool loadFile(DataSourceRef xmlFile);
+        bool saveFile(DataSourceRef xmlFile);
+        bool saveFile();
+    
+        bool load(DataSourceRef xmlFile);
+        bool save(DataSourceRef xmlFile);
+#else
 		bool loadFile(const string& xmlFile);
 		bool saveFile(const string& xmlFile);
 		bool saveFile();
 
 		bool load(const string & path);
 		bool save(const string & path);
+#endif
 
 		void clearTagContents(const string& tag, int which = 0);
 		void removeTag(const string& tag, int which = 0);
@@ -113,9 +141,10 @@ class ofxXmlSettings: public ofBaseFileSerializer{
 
 		int		addTag(const string& tag); //adds an empty tag at the current level
 
+#ifndef CINDER_HOST
 		void serialize(const ofAbstractParameter & parameter);
 		void deserialize(ofAbstractParameter & parameter);
-
+#endif
 
         // Attribute-related methods
 		int		addAttribute(const string& tag, const string& attribute, int value, int which = 0);
@@ -169,4 +198,8 @@ class ofxXmlSettings: public ofBaseFileSerializer{
         bool readIntAttribute(const string& tag, const string& attribute, int& valueString, int which);
         bool readDoubleAttribute(const string& tag, const string& attribute, double& outValue, int which);
         bool readStringAttribute(const string& tag, const string& attribute, string& outValue, int which);
-};   
+};
+    
+#ifdef CINDER_HOST
+} // namespace cinder
+#endif
