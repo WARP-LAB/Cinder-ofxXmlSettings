@@ -1,7 +1,7 @@
 // xmlSettingsExample
 // this is just copy paste from https://github.com/openframeworks/openFrameworks/tree/master/examples/addons/xmlSettingsExample/src
 // all credits to oF
-// note that there is XML in libcinder http://libcinder.org/docs/v0.8.3/guide___xml_tree.html, this port is only intended so that some oF code can be reused 
+// note that there is XML in libcinder http://libcinder.org/docs/v0.8.3/guide___xml_tree.html, this port is only intended so that some oF code can be reused
 // ported by kroko
 
 #include "cinder/app/AppNative.h"
@@ -88,9 +88,11 @@ void xmlSettingsExampleApp::setup()
     /*
      // for resources
      try {
-     bLoaded = XML.loadFile(loadAsset( "settings.xml" ));
-     if(bLoaded) {
-     console() << "resource loaded successfully" << endl;
+     if( XML.loadFile(loadResource( "mySettings.xml" ))) {
+     message = "mySettings.xml loaded!";
+     }else{
+     message = "unable to load mySettings.xml check data/ folder";
+     }
      }
      }
      catch( ResourceLoadExc::ResourceLoadExc &exc ) {
